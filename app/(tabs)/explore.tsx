@@ -1,104 +1,136 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
-
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Dimensions, ScrollView, StyleSheet, useColorScheme } from 'react-native';
+import { Card, Text } from 'react-native-paper';
+
+const screenWidth = Dimensions.get('window').width;
 
 export default function TabTwoScreen() {
+
+  const colorScheme = useColorScheme();
+  const backgroundColor = colorScheme === 'light' ? '#F0F0F0' : '#353636';
+  const iconColor = colorScheme === 'light' ? '#000000' : '#ffffff';
+  const textColor = colorScheme === 'light' ? '#555555' : '#EEEEEE';
+  const cardColor = colorScheme === 'light' ? '#ffffffff' : '#000000ff';
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+
+<ThemedView style={{ flex: 1, backgroundColor }}>
+<ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
+<ThemedView style={[styles.TopBar, { backgroundColor }]}>
+  <ThemedView style={[styles.HeaderItems, { backgroundColor }]}>
+    <FontAwesome
+      name="group"
+      size={130}
+      color={iconColor}
+    />
+    <ThemedText
+      type="title"
+      style={styles.headerText}
+    >Quem Somos
+    </ThemedText>
+  </ThemedView>
+</ThemedView>
+
+
+
+<Card style={[styles.cardStyle, { backgroundColor: cardColor }]}>
+  <Card.Cover
+    source={require('@/assets/images/Victor_Percio.jpg')}
+    style={styles.PhotoStyles}
+  />
+  <Card.Content style={styles.CardContent}>
+  <Text style={[styles.CardtitleText, { color: textColor }]}>Victor Percio</Text>
+  </Card.Content>
+   <Card.Content style={styles.CardContent}>
+   <Text style={[styles.CardText, { color: textColor }]}>Software e Eletrônica</Text>
+  </Card.Content>
+</Card>
+
+  
+<Card style={[styles.cardStyle, { backgroundColor: cardColor }]}>
+  <Card.Cover
+    source={require('@/assets/images/Catherine.jpeg')}
+    style={styles.PhotoStyles}
+  />
+  <Card.Content style={styles.CardContent}>
+  <Text style={[styles.CardtitleText, { color: textColor }]}>Catherine Calegari</Text>
+  </Card.Content>
+   <Card.Content style={styles.CardContent}>
+   <Text style={[styles.CardText, { color: textColor }]}>Software e Eletrônica</Text>
+  </Card.Content>
+</Card>
+
+
+<Card style={[styles.cardStyle, { backgroundColor: cardColor }]}>
+  <Card.Cover
+    source={require('@/assets/images/Ana.jpeg')}
+    style={styles.PhotoStyles}
+  />
+  <Card.Content style={styles.CardContent}>
+  <Text style={[styles.CardtitleText, { color: textColor }]}>Ana Clara</Text>
+  </Card.Content>
+   <Card.Content style={styles.CardContent}>
+   <Text style={[styles.CardText, { color: textColor }]}>Mecânica</Text>
+  </Card.Content>
+</Card>
+
+
+<Card style={[styles.cardStyle, { backgroundColor: cardColor }]}>
+  <Card.Cover
+    source={require('@/assets/images/Andre.jpeg')}
+    style={styles.PhotoStyles}
+  />
+  <Card.Content style={styles.CardContent}>
+  <Text style={[styles.CardtitleText, { color: textColor }]}>André Ruiz</Text>
+  </Card.Content>
+   <Card.Content style={styles.CardContent}>
+   <Text style={[styles.CardText, { color: textColor }]}>Mecânica e Eletrônica</Text>
+  </Card.Content>
+</Card>
+
+
+<Card style={[styles.cardStyle, { backgroundColor: cardColor }]}>
+  <Card.Cover
+    source={require('@/assets/images/Stocco.jpeg')}
+    style={styles.PhotoStyles}
+  />
+  <Card.Content style={styles.CardContent}>
+  <Text style={[styles.CardtitleText, { color: textColor }]}>Guilherme Stocco</Text>
+  </Card.Content>
+   <Card.Content style={styles.CardContent}>
+   <Text style={[styles.CardText, { color: textColor }]}>Eletrônica</Text>
+  </Card.Content>
+</Card>
+
+</ScrollView>
+</ThemedView>
+
   );
 }
 
 const styles = StyleSheet.create({
+TopBar: {
+  width: '100%',
+  height: 240,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+HeaderItems: {
+  flexDirection: 'row',
+  alignItems: 'flex-end',
+  gap: 15,
+  marginTop: 35,
+
+},
+
+headerText: {
+  fontSize: 36,
+  fontWeight: 'bold',
+  marginBottom: 50,
+},
+
   headerImage: {
     color: '#808080',
     bottom: -90,
@@ -109,4 +141,62 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
   },
+  
+
+  CardContent: {
+    alignItems: 'center',
+  },
+
+ CardtitleText: {
+  fontSize: 35,
+  color: '#555555ff',
+  fontWeight: 'bold',
+},
+
+CardText: {
+  fontSize: 20,
+  color: '#555555ff',
+},
+
+  PhotoStyles: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignSelf: 'center', 
+    marginTop: 20,
+  },
+
+  cardStyle: {
+  width: screenWidth * 0.95,
+  alignSelf: 'center',
+  borderRadius: 16,
+  padding: 10,
+  marginVertical: 10,
+  elevation: 4,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.84,
+},
+headerContainer: {
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginTop: 20,
+},
+
+headerIcon: {
+  marginBottom: 10,
+},
+
+
+headerOverlay: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
 });
