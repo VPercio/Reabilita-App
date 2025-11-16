@@ -62,9 +62,12 @@ unsigned long ultimoStep = 0;
 int stepDelay = 0;
 bool movimentoAtivo = false;
 
-
 bool esperandoNoTopo = false;
 unsigned long inicioEsperaTopo = 0;
+
+bool esperandoNaBase = false;
+unsigned long inicioEsperaBase = 0;
+
 
 void setColor(bool r, bool g, bool b);
 void atualizarLED();
@@ -91,10 +94,9 @@ void onDisconnect(BLEServer* pServer) override {
   deviceConnected = false;
   Serial.println("Dispositivo desconectado");
 
-
   ligado = false;
   movimentoAtivo = false;
-  servo.write(0);
+  servo.write(180);
   Serial.println("Bluetooth caiu! Sistema desligado por segurança.");
 
   delay(100);
@@ -106,7 +108,6 @@ void onDisconnect(BLEServer* pServer) override {
 
   atualizarLED();
 }
-
 
 };
 
@@ -138,7 +139,7 @@ class MyCallbacks : public BLECharacteristicCallbacks {
       }
 
       if (!ligado) {
-        servo.write(0);
+        servo.write(180);   // INVERTIDO
         movimentoAtivo = false;
       }
       atualizarLED();
@@ -150,9 +151,14 @@ class MyCallbacks : public BLECharacteristicCallbacks {
 //DISPLAY
 
 void atualizarDisplay() {
+
   int v = velocidade;
   int i = intensidade;
   int r = repeticoes;
+
+  if (ligado && movimentoAtivo) {
+    r = repeticoesRestantes;
+  }
 
   if (!modoAtual && !ligado) {
     v = map(analogRead(PINO_POT_VELOC), 0, 4095, 0, 5);
@@ -222,7 +228,7 @@ void lerControlesManuais() {
           Serial.println("Dispositivo LIGADO!");
         } else {
           Serial.println("Dispositivo DESLIGADO!");
-          servo.write(0);
+          servo.write(180);
           movimentoAtivo = false;
         }
         mostrarVariaveis();
@@ -257,7 +263,7 @@ void iniciarBLE() {
 }
 
 void entrarModoBluetooth() {
-  servo.write(0); delay(200);
+  servo.write(180); delay(200);   // INVERTIDO
   ligado = false; movimentoAtivo = false;
   velocidade = intensidade = repeticoes = 0;
   mostrarVariaveis();
@@ -266,7 +272,7 @@ void entrarModoBluetooth() {
 }
 
 void entrarModoManual() {
-  servo.write(0); delay(200);
+  servo.write(180); delay(200);   // INVERTIDO
   ligado = false; movimentoAtivo = false;
   velocidade = intensidade = repeticoes = 0;
   mostrarVariaveis();
@@ -289,7 +295,7 @@ void setup() {
   estadoBotaoAnterior = digitalRead(PINO_BOTAO);
 
   iniciarBLE();
-  servo.attach(SERVO_PIN); servo.write(0); delay(300);
+  servo.attach(SERVO_PIN); servo.write(180); delay(300);
 
   modoAtual = digitalRead(PINO_MODO); ultimoModo = modoAtual;
   if (modoAtual) entrarModoBluetooth(); else entrarModoManual();
@@ -311,7 +317,7 @@ void loop() {
     ultimoModo = modoAtual;
     movimentoAtivo = false;
     ligado = false;
-    servo.write(0);
+    servo.write(180);
   }
 
   if (!modoAtual) lerControlesManuais();
@@ -330,11 +336,9 @@ void iniciarMovimento() {
   if (velocidade == 0 || intensidade == 0 || repeticoes == 0) return;
   servoPosAtual = 0;
 
-
   servoAnguloAlvo = 36 * (6 - intensidade);
   if (servoAnguloAlvo > 180) servoAnguloAlvo = 180;
   if (servoAnguloAlvo < 0) servoAnguloAlvo = 0;
-
 
   repeticoesRestantes = repeticoes;
   servoIndo = true;
@@ -344,29 +348,42 @@ void iniciarMovimento() {
   esperandoNoTopo = false;
   inicioEsperaTopo = 0;
 
+  esperandoNaBase = false;
+  inicioEsperaBase = 0;
+
   Serial.printf("Iniciando movimento: %d repetições, ângulo=%d\n", repeticoes, servoAnguloAlvo);
 }
+
 
 void atualizarServo() {
   if (!movimentoAtivo) return;
 
   if (!ligado) {
-    servo.write(0);
+    servo.write(180);
     movimentoAtivo = false;
     return;
   }
 
 
+  // ESPERA NO TOPO
   if (esperandoNoTopo) {
     unsigned long duracao = (unsigned long)intensidade * 1000UL;
     if (millis() - inicioEsperaTopo >= duracao) {
       esperandoNoTopo = false;
-
     } else {
       return;
     }
   }
 
+
+  //ESPERA DE 1s NA BASE
+  if (esperandoNaBase) {
+    if (millis() - inicioEsperaBase >= 1000) {
+      esperandoNaBase = false;
+    } else {
+      return;
+    }
+  }
 
   if (millis() - ultimoStep < stepDelay) return;
   ultimoStep = millis();
@@ -374,31 +391,47 @@ void atualizarServo() {
   int passo = velocidade + 1;
 
   if (servoIndo) {
+
+    stepDelay = velocidadeDelay[velocidade];
+    passo = velocidade + 1;
+
     servoPosAtual += passo;
+
     if (servoPosAtual >= servoAnguloAlvo) {
       servoPosAtual = servoAnguloAlvo;
       servoIndo = false;
 
-
       esperandoNoTopo = true;
       inicioEsperaTopo = millis();
-
       return;
-   
     }
+
   } else {
+
+
+    //DESCIDA COM velocidade 3
+    stepDelay = velocidadeDelay[3];
+    passo = 4;
+
     servoPosAtual -= passo;
+
     if (servoPosAtual <= 0) {
       servoPosAtual = 0;
+
+      // inicia pausa de 1 segundo
+      esperandoNaBase = true;
+      inicioEsperaBase = millis();
+
       repeticoesRestantes--;
 
       Serial.printf("Repetições restantes: %d\n", repeticoesRestantes);
+      atualizarDisplay();   //atualizar display imediatamente
 
       if (repeticoesRestantes <= 0) {
         movimentoAtivo = false;
         ligado = false;
         atualizarLED();
-        servo.write(0);
+        servo.write(180);
         Serial.println("Ciclo completo! Sistema desligado.");
         return;
       }
@@ -407,5 +440,5 @@ void atualizarServo() {
     }
   }
 
-  servo.write(servoPosAtual);
+  servo.write(180 - servoPosAtual);
 }
