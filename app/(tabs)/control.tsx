@@ -93,24 +93,102 @@ export default function ControlScreen() {
 
   const colorScheme = useColorScheme();
   const backgroundColor = colorScheme === 'light' ? '#F0F0F0' : '#353636';
-  const textColor = colorScheme === 'light' ? '#555555' : '#EEEEEE';
   const screenWidth = Dimensions.get('window').width;
 
-  const slidersDisabled = !connectedDevice || bluetoothState !== "PoweredOn" || ligado;
+  const slidersDisabled =
+    !connectedDevice || bluetoothState !== "PoweredOn" || ligado;
   const buttonDisabled = !connectedDevice || bluetoothState !== "PoweredOn";
 
-useEffect(() => {
-  if (!connectedDevice || bluetoothState !== "PoweredOn") {
-    setLigado(false);  
-    router.push("/");
+  // ============================
+  // DECODER Base64 -> string
+  // ============================
+  function base64ToString(base64: string) {
+    try {
+      const binary = atob(base64);
+      const bytes = Uint8Array.from(binary, (m) => m.charCodeAt(0));
+      return new TextDecoder().decode(bytes);
+    } catch (e) {
+      return "";
+    }
   }
-}, [connectedDevice, bluetoothState]);
+
+  // ==========================================
+  // LISTENER: Notificações do ESP32
+  // ==========================================
+  useEffect(() => {
+    if (!connectedDevice || bluetoothState !== "PoweredOn") return;
+
+    console.log("🔔 Iniciando monitoramento BLE...");
+
+    const subscription = connectedDevice.monitorCharacteristicForService(
+      "12345678-1234-1234-1234-123456789abc",
+      "abcd1234-5678-90ab-cdef-1234567890ab",
+      (error, characteristic) => {
+        if (error) {
+          console.log("Erro no monitor:", error);
+          return;
+        }
+
+        if (!characteristic?.value) return;
+
+        const decoded = base64ToString(characteristic.value);
+        console.log("Notificação recebida:", decoded);
+
+        // ESP finalizou o ciclo
+     if (decoded.includes("DESLIGAR") || decoded.includes("desligado")) {
+  console.log("ESP desligou automaticamente!");
+  setLigado(false);
+}
+
+// ESP enviou "FIM" indicando ciclo concluído
+if (decoded.includes("FIM")) {
+  console.log("Ciclo finalizado pelo ESP!");
+  setLigado(false);
+}
+      }
+    );
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [connectedDevice, bluetoothState]);
+
+  useEffect(() => {
+  if (!connectedDevice || bluetoothState !== "PoweredOn") return;
+
+  const interval = setInterval(async () => {
+    try {
+      const char = await connectedDevice.readCharacteristicForService(
+        "12345678-1234-1234-1234-123456789abc",
+        "abcd1234-5678-90ab-cdef-1234567890ab"
+      );
+
+      if (!char?.value) return;
+
+      const decoded = base64ToString(char.value);
+      console.log("🔎 Leitura periódica:", decoded);
+
+      // Se o ESP terminou, ele SEMPRE para de enviar movimentos
+      if (ligado && decoded.includes("0,0,0")) {
+        console.log("⛔ ESP parado → desligando no app");
+        setLigado(false);
+      }
+    } catch (e) {
+      console.log("Erro no polling:", e);
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, [connectedDevice, ligado, bluetoothState]);
 
 
+  // ==========================================
+  // Função para enviar comando ao ESP
+  // ==========================================
   function stringToBase64(str: string) {
     const bytes = new TextEncoder().encode(str);
-    let binary = '';
-    bytes.forEach((b) => binary += String.fromCharCode(b));
+    let binary = "";
+    bytes.forEach((b) => (binary += String.fromCharCode(b)));
     return btoa(binary);
   }
 
@@ -136,11 +214,13 @@ useEffect(() => {
     }
   };
 
-  const handleButtonPress = async () => {
-    await sendToESP();
-    setLigado(!ligado);
-  };
-
+  // ==========================================
+  // Botão Ligar/Desligar
+  // ==========================================
+const handleButtonPress = async () => {
+  await sendToESP();
+  setLigado((prev) => !prev);
+};
   return (
     <ThemedView style={{ flex: 1, backgroundColor }}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -180,13 +260,19 @@ useEffect(() => {
             style={[
               styles.button,
               {
-                backgroundColor: buttonDisabled ? "#A9A9A9" : ligado ? 'red' : 'green',
+                backgroundColor: buttonDisabled
+                  ? "#A9A9A9"
+                  : ligado
+                  ? "red"
+                  : "green",
                 width: screenWidth * 0.9
               }
             ]}
             disabled={buttonDisabled}
           >
-            <Text style={styles.buttonText}>{ligado ? 'Desligar' : 'Ligar'}</Text>
+            <Text style={styles.buttonText}>
+              {ligado ? "Desligar" : "Ligar"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -202,19 +288,19 @@ const styles = StyleSheet.create({
 
   counterContainer: {
     marginBottom: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   sliderLabel: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 15,
   },
 
   counterCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: 20,
     paddingVertical: 20,
     paddingHorizontal: 25,
@@ -231,21 +317,21 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   counterButtonText: {
     fontSize: 32,
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
   },
 
   counterValue: {
     fontSize: 28,
-    fontWeight: '600',
+    fontWeight: "600",
     width: 50,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   disabled: {
@@ -254,18 +340,18 @@ const styles = StyleSheet.create({
 
   buttonContainer: {
     marginTop: 40,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   button: {
     paddingVertical: 15,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });

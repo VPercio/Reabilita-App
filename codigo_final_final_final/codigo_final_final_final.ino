@@ -190,7 +190,7 @@ void atualizarLED() {
   }
   if (modoAtual && deviceConnected && !ligado) { setColor(255, 0, 0); return; }
   if (modoAtual && deviceConnected && ligado) { setColor(0, 255, 0); return; }
-  if (!modoAtual && !ligado) { setColor(255, 255, 0); return; }
+  if (!modoAtual && !ligado) { setColor(255, 10, 0); return; }
   if (!modoAtual && ligado) { setColor(0, 0, 255); return; }
   setColor(0, 0, 0);
 }
@@ -221,9 +221,9 @@ void lerControlesManuais() {
       if (estadoConfirmado == LOW) {
         ligado = !ligado;
         if (ligado) {
-      velocidade  = (int)round((analogRead(PINO_POT_VELOC)/4095.0) * 5);
-      intensidade = (int)round((analogRead(PINO_POT_INTENS)/4095.0) * 5);
-      repeticoes  = (int)round((analogRead(PINO_POT_REP)/4095.0) * 20);
+      velocidade  = (int)((analogRead(PINO_POT_VELOC)/4095.0) * 5);
+      intensidade = (int)((analogRead(PINO_POT_INTENS)/4095.0) * 5);
+      repeticoes  = (int)((analogRead(PINO_POT_REP)/4095.0) * 20);
 
           Serial.println("Dispositivo LIGADO!");
         } else {
@@ -303,6 +303,18 @@ void setup() {
   Serial.println("Sistema pronto!");
 }
 
+void zerarDisplayFinalCiclo() {
+  display.showNumberDecEx(0, 0, true); // Mostra "0000"
+  velocidade = 0;
+  intensidade = 0;
+  repeticoes = 0;
+
+  // Se quiser avisar o app que acabou:
+  if (modoAtual && pCharacteristic) {
+    pCharacteristic->setValue("FIM");
+    pCharacteristic->notify();
+  }
+}
 
 //LOOP PRINCIPAL
 
@@ -433,6 +445,18 @@ void atualizarServo() {
         atualizarLED();
         servo.write(180);
         Serial.println("Ciclo completo! Sistema desligado.");
+
+  if (modoAtual && pCharacteristic) {
+    pCharacteristic->setValue("FIM");
+    pCharacteristic->notify();    // 🔥 ENVIA PARA O APP REACT!!
+  }
+
+  
+        if (modoAtual) {
+      zerarDisplayFinalCiclo();
+    }
+
+
         return;
       }
 
